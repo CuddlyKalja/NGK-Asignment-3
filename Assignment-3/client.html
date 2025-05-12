@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Weather Client</title>
+</head>
+<body>
+  <h1>Weather Station Client</h1>
+
+  <h2>Opret ny vejrdata</h2>
+  <form id="addForm">
+    ID: <input type="number" id="id"><br>
+    Date: <input type="number" id="date"><br>
+    Time: <input type="number" id="time"><br>
+    PlaceName: <input type="text" id="placeName"><br>
+    Lat: <input type="number" step="any" id="lat"><br>
+    Lon: <input type="number" step="any" id="lon"><br>
+    Temperature: <input type="number" step="any" id="temperature"><br>
+    Humidity: <input type="number" id="humidity"><br>
+    <button type="submit">Send (POST)</button>
+  </form>
+
+  <h2>Opdater vejrdata</h2>
+  <form id="updateForm">
+    ID (til opdatering): <input type="number" id="updateId"><br>
+    Date: <input type="number" id="updateDate"><br>
+    Time: <input type="number" id="updateTime"><br>
+    PlaceName: <input type="text" id="updatePlaceName"><br>
+    Lat: <input type="number" step="any" id="updateLat"><br>
+    Lon: <input type="number" step="any" id="updateLon"><br>
+    Temperature: <input type="number" step="any" id="updateTemperature"><br>
+    Humidity: <input type="number" id="updateHumidity"><br>
+    <button type="submit">Opdater (PUT)</button>
+  </form>
+
+  <h2>Alle vejrdata</h2>
+  <button onclick="fetchWeather()">Hent data</button>
+  <pre id="output"></pre>
+
+  <script>
+    const server = "http://localhost:8080";
+
+    document.getElementById("addForm").onsubmit = async function(e) {
+      e.preventDefault();
+      const data = {
+        ID: parseInt(document.getElementById("id").value, 10),
+        Date: parseInt(document.getElementById("date").value, 10),
+        Time: parseInt(document.getElementById("time").value, 10),
+        PlaceName: document.getElementById("placeName").value,
+        Lat: parseFloat(document.getElementById("lat").value),
+        Lon: parseFloat(document.getElementById("lon").value),
+        Temperature: parseFloat(document.getElementById("temperature").value),
+        Humidity: parseInt(document.getElementById("humidity").value, 10)
+      };
+      const res = await fetch(server + "/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      alert("Sendt: " + res.status);
+    };
+
+    document.getElementById("updateForm").onsubmit = async function(e) {
+      e.preventDefault();
+      const id = parseInt(document.getElementById("updateId").value, 10);
+      const data = {
+        ID: id,
+        Date: parseInt(document.getElementById("updateDate").value, 10),
+        Time: parseInt(document.getElementById("updateTime").value, 10),
+        PlaceName: document.getElementById("updatePlaceName").value,
+        Lat: parseFloat(document.getElementById("updateLat").value),
+        Lon: parseFloat(document.getElementById("updateLon").value),
+        Temperature: parseFloat(document.getElementById("updateTemperature").value),
+        Humidity: parseInt(document.getElementById("updateHumidity").value, 10)
+      };
+      const res = await fetch(server + "/" + id, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      alert("Opdateret: " + res.status);
+    };
+
+    async function fetchWeather() {
+      const res = await fetch(server + "/");
+      const data = await res.json();
+      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>

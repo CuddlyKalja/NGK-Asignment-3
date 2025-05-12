@@ -64,16 +64,8 @@ public:
         auto resp = init_resp(req->create_response());
         resp.set_body(json_dto::to_json(m_weather));
         return resp.done();
-    
     }
-    auto on_options(const restinio::request_handle_t &req, rr::route_params_t) {
-        return req->create_response()
-            .append_header("Access-Control-Allow-Origin", "*")
-            .append_header("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
-            .append_header("Access-Control-Allow-Headers", "Content-Type")
-            .done();
-    }
-    
+
     auto on_weather_post(const restinio::request_handle_t &req, rr::route_params_t) {
         try {
             auto body = req->body();
@@ -92,7 +84,7 @@ public:
 
     auto on_weather_put(const restinio::request_handle_t &req, rr::route_params_t params) {
         try {
-            int id = std::stoi(params["id"]);
+            int id = std::stoi(std::string(params["id"]));
             auto updatedEntry = json_dto::from_json<weatherRegistration>(req->body());
 
             for (auto &entry : m_weather) {
@@ -116,7 +108,7 @@ public:
     }
 
     auto on_weather_by_id(const restinio::request_handle_t &req, rr::route_params_t params) const {
-        int id = std::stoi(params["id"]);
+        int id = std::stoi(std::string(params["id"]));
         for (const auto &entry : m_weather) {
             if (entry.m_id == id) {
                 auto resp = init_resp(req->create_response());
@@ -131,7 +123,7 @@ public:
     }
 
     auto on_weather_by_date(const restinio::request_handle_t &req, rr::route_params_t params) const {
-        int date = std::stoi(params["date"]);
+        int date = std::stoi(std::string(params["date"]));
         weatherStation_t results;
         for (const auto &entry : m_weather) {
             if (entry.m_date == date)
@@ -154,6 +146,14 @@ public:
         return resp.done();
     }
 
+    auto on_options(const restinio::request_handle_t &req, rr::route_params_t) {
+        return req->create_response()
+            .append_header("Access-Control-Allow-Origin", "*")
+            .append_header("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
+            .append_header("Access-Control-Allow-Headers", "Content-Type")
+            .done();
+    }
+
 private:
     weatherStation_t &m_weather;
 
@@ -162,7 +162,8 @@ private:
         resp
             .append_header("Server", "RESTinio WeatherServer")
             .append_header_date_field()
-            .append_header("Content-Type", "application/json; charset=utf-8");
+            .append_header("Content-Type", "application/json; charset=utf-8")
+            .append_header("Access-Control-Allow-Origin", "*");
         return resp;
     }
 };
@@ -179,12 +180,12 @@ auto server_handler(weatherStation_t &weatherStation) {
     router->http_get("/date/:date", std::bind(&weatherInformationHandler::on_weather_by_date, handler, std::placeholders::_1, std::placeholders::_2));
     router->http_get("/latest", std::bind(&weatherInformationHandler::on_weather_latest, handler, std::placeholders::_1, std::placeholders::_2));
 
-    router->http_options("/", std::bind(&weatherInformationHandler::on_options, handler, std::placeholders::_1, std::placeholders::_2));
-    router->http_options("/:id", std::bind(&weatherInformationHandler::on_options, handler, std::placeholders::_1, std::placeholders::_2));
-
+    // CORS preflight (OPTIONS) handlers
+    router->add_handler(restinio::http_method_options(), "/", std::bind(&weatherInformationHandler::on_options, handler, std::placeholders::_1, std::placeholders::_2));
+    router->add_handler(restinio::http_method_options(), R"(/:id(\d+))", std::bind(&weatherInformationHandler::on_options, handler, std::placeholders::_1, std::placeholders::_2));
 
     router->add_handler(
-        rr::none_of_methods(restinio::http_method_get(), restinio::http_method_post(), restinio::http_method_put()),
+        rr::none_of_methods(restinio::http_method_get(), restinio::http_method_post(), restinio::http_method_put(), restinio::http_method_options()),
         "/",
         [](const auto &req, auto) {
             return req->create_response(restinio::status_method_not_allowed())
@@ -223,6 +224,6 @@ int main() {
         std::cerr << "Error: " << ex.what() << std::endl;
         return 1;
     }
-
+ 
     return 0;
 }

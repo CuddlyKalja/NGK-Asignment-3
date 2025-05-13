@@ -34,7 +34,19 @@
   </form>
 
   <h2>Alle vejrdata</h2>
-  <button onclick="fetchWeather()">Hent data</button>
+  <button onclick="fetchWeather()">Hent alle</button>
+
+  <h2>Hent vejrdata med ID</h2>
+  ID: <input type="number" id="getId">
+  <button onclick="fetchById()">Hent ID</button>
+
+  <h2>Hent vejrdata med dato</h2>
+  Date: <input type="number" id="getDate">
+  <button onclick="fetchByDate()">Hent dato</button>
+
+  <h2>Seneste 3 vejrdata</h2>
+  <button onclick="fetchLatest()">Hent seneste 3</button>
+
   <pre id="output"></pre>
 
   <script>
@@ -83,6 +95,26 @@
 
     async function fetchWeather() {
       const res = await fetch(server + "/");
+      const data = await res.json();
+      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function fetchById() {
+      const id = document.getElementById("getId").value;
+      const res = await fetch(server + "/id/" + id);
+      const data = await res.json();
+      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function fetchByDate() {
+      const date = document.getElementById("getDate").value;
+      const res = await fetch(server + "/date/" + date);
+      const data = await res.json();
+      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function fetchLatest() {
+      const res = await fetch(server + "/latest");
       const data = await res.json();
       document.getElementById("output").textContent = JSON.stringify(data, null, 2);
     }

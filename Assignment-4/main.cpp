@@ -16,7 +16,6 @@ using traits_t = restinio::traits_t<
 
 namespace rws = restinio::websocket::basic;
 
-// ----------------- Vejrdata struktur -----------------
 struct weatherRegistration {
     weatherRegistration() = default;
 
@@ -49,7 +48,6 @@ struct weatherRegistration {
 
 using weatherStation_t = std::vector<weatherRegistration>;
 
-// ----------------- Server klasse -----------------
 class weatherInformationHandler {
 public:
     explicit weatherInformationHandler(weatherStation_t &weather) : m_weather(weather) {}
@@ -69,10 +67,10 @@ public:
             auto resp = init_resp(req->create_response(restinio::status_created()));
             resp.set_body(R"({"status": "added"})");
 
-            // Push til WebSocket-klienter
+            // Push ny data til WebSocket-klienter (kompatibel version)
             auto json_msg = json_dto::to_json(m_weather.back());
             for (auto &[id, ws] : m_registry) {
-                ws->send_message(rws::message_t::builder().final().text(json_msg));
+                ws->send_message(rws::message_t{ rws::opcode_t::text_frame, json_msg });
             }
 
             return resp.done();
@@ -185,7 +183,7 @@ private:
     }
 };
 
-// ----------------- Server setup -----------------
+// ----------------- Server Setup -----------------
 auto server_handler(weatherStation_t &weatherStation) {
     auto router = std::make_unique<router_t>();
     auto handler = std::make_shared<weatherInformationHandler>(std::ref(weatherStation));

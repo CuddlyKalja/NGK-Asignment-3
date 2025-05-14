@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Weather Client</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
   <h1>Weather Station Client</h1>
@@ -64,12 +65,14 @@
         Temperature: parseFloat(document.getElementById("temperature").value),
         Humidity: parseInt(document.getElementById("humidity").value, 10)
       };
-      const res = await fetch(server + "/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      alert("Sendt: " + res.status);
+      try {
+        const res = await axios.post(server + "/", data, {
+          headers: { "Content-Type": "application/json" }
+        });
+        alert("Sendt: " + res.status);
+      } catch (err) {
+        alert("Fejl: " + (err.response ? err.response.status : err));
+      }
     };
 
     document.getElementById("updateForm").onsubmit = async function(e) {
@@ -85,38 +88,52 @@
         Temperature: parseFloat(document.getElementById("updateTemperature").value),
         Humidity: parseInt(document.getElementById("updateHumidity").value, 10)
       };
-      const res = await fetch(server + "/" + id, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      alert("Opdateret: " + res.status);
+      try {
+        const res = await axios.put(server + "/" + id, data, {
+          headers: { "Content-Type": "application/json" }
+        });
+        alert("Opdateret: " + res.status);
+      } catch (err) {
+        alert("Fejl: " + (err.response ? err.response.status : err));
+      }
     };
 
     async function fetchWeather() {
-      const res = await fetch(server + "/");
-      const data = await res.json();
-      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+      try {
+        const res = await axios.get(server + "/");
+        document.getElementById("output").textContent = JSON.stringify(res.data, null, 2);
+      } catch (err) {
+        document.getElementById("output").textContent = "Fejl: " + (err.response ? err.response.status : err);
+      }
     }
 
     async function fetchById() {
       const id = document.getElementById("getId").value;
-      const res = await fetch(server + "/id/" + id);
-      const data = await res.json();
-      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+      try {
+        const res = await axios.get(server + "/id/" + id);
+        document.getElementById("output").textContent = JSON.stringify(res.data, null, 2);
+      } catch (err) {
+        document.getElementById("output").textContent = "Fejl: " + (err.response ? err.response.status : err);
+      }
     }
 
     async function fetchByDate() {
       const date = document.getElementById("getDate").value;
-      const res = await fetch(server + "/date/" + date);
-      const data = await res.json();
-      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+      try {
+        const res = await axios.get(server + "/date/" + date);
+        document.getElementById("output").textContent = JSON.stringify(res.data, null, 2);
+      } catch (err) {
+        document.getElementById("output").textContent = "Fejl: " + (err.response ? err.response.status : err);
+      }
     }
 
     async function fetchLatest() {
-      const res = await fetch(server + "/latest");
-      const data = await res.json();
-      document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+      try {
+        const res = await axios.get(server + "/latest");
+        document.getElementById("output").textContent = JSON.stringify(res.data, null, 2);
+      } catch (err) {
+        document.getElementById("output").textContent = "Fejl: " + (err.response ? err.response.status : err);
+      }
     }
   </script>
 </body>

@@ -16,6 +16,7 @@ using traits_t = restinio::traits_t<
 
 namespace rws = restinio::websocket::basic;
 
+// Data structure representing a single weather data entry
 struct weatherRegistration {
     weatherRegistration() = default;
 
@@ -48,16 +49,19 @@ struct weatherRegistration {
 
 using weatherStation_t = std::vector<weatherRegistration>;
 
+// Handles all HTTP/WebSocket logic for weather endpoints
 class weatherInformationHandler {
 public:
     explicit weatherInformationHandler(weatherStation_t &weather) : m_weather(weather) {}
 
+    // GET all weather data
     auto on_weather_list(const restinio::request_handle_t &req, rr::route_params_t) const {
         auto resp = init_resp(req->create_response());
         resp.set_body(json_dto::to_json(m_weather));
         return resp.done();
     }
 
+    // POST new weather data
     auto on_weather_post(const restinio::request_handle_t &req, rr::route_params_t) {
         try {
             auto body = req->body();
@@ -67,14 +71,14 @@ public:
             auto resp = init_resp(req->create_response(restinio::status_created()));
             resp.set_body(R"({"status": "added"})");
 
-            // Push ny data til WebSocket-klienter (kompatibel version)
+            // Notify all connected WebSocket clients
             auto json_msg = json_dto::to_json(m_weather.back());
             for (auto &[id, ws] : m_registry) {
                 ws->send_message(rws::message_t{
-            rws::final_frame_flag_t::final_frame,
-            rws::opcode_t::text_frame,
-            json_msg
-            });
+                    rws::final_frame_flag_t::final_frame,
+                    rws::opcode_t::text_frame,
+                    json_msg
+                });
             }
 
             return resp.done();
@@ -85,6 +89,7 @@ public:
         }
     }
 
+    // PUT update a weather entry by ID
     auto on_weather_put(const restinio::request_handle_t &req, rr::route_params_t params) {
         try {
             int id = std::stoi(std::string(params["id"]));
@@ -109,6 +114,7 @@ public:
         }
     }
 
+    // GET single entry by ID
     auto on_weather_by_id(const restinio::request_handle_t &req, rr::route_params_t params) const {
         int id = std::stoi(std::string(params["id"]));
         for (const auto &entry : m_weather) {
@@ -124,6 +130,7 @@ public:
                   .done();
     }
 
+    // GET all entries from a specific date
     auto on_weather_by_date(const restinio::request_handle_t &req, rr::route_params_t params) const {
         int date = std::stoi(std::string(params["date"]));
         weatherStation_t results;
@@ -137,6 +144,7 @@ public:
         return resp.done();
     }
 
+    // GET the 3 latest entries
     auto on_weather_latest(const restinio::request_handle_t &req, rr::route_params_t) const {
         weatherStation_t latest;
         int count = 0;
@@ -148,12 +156,13 @@ public:
         return resp.done();
     }
 
+    // WebSocket endpoint for live updates
     auto on_live_update(const restinio::request_handle_t &req, rr::route_params_t) {
         if (restinio::http_connection_header_t::upgrade == req->header().connection()) {
             auto wsh = rws::upgrade<traits_t>(*req, rws::activation_t::immediate,
                 [this](auto wsh, auto m) {
                     if (rws::opcode_t::text_frame == m->opcode()) {
-                        wsh->send_message(*m);  // echo
+                        wsh->send_message(*m);  // echo back
                     } else if (rws::opcode_t::connection_close_frame == m->opcode()) {
                         m_registry.erase(wsh->connection_id());
                     }
@@ -165,6 +174,7 @@ public:
         return restinio::request_rejected();
     }
 
+    // OPTIONS handler for CORS
     auto on_options(const restinio::request_handle_t &req, rr::route_params_t) {
         return req->create_response()
             .append_header("Access-Control-Allow-Origin", "*")
@@ -177,6 +187,7 @@ private:
     weatherStation_t &m_weather;
     mutable std::map<std::uint64_t, rws::ws_handle_t> m_registry;
 
+    // Standard headers for all responses
     template <typename RESP>
     static RESP init_resp(RESP resp) {
         resp.append_header("Server", "RESTinio WeatherServer")
@@ -187,7 +198,7 @@ private:
     }
 };
 
-// ----------------- Server Setup -----------------
+// Configure routes and bind handlers
 auto server_handler(weatherStation_t &weatherStation) {
     auto router = std::make_unique<router_t>();
     auto handler = std::make_shared<weatherInformationHandler>(std::ref(weatherStation));
@@ -206,7 +217,7 @@ auto server_handler(weatherStation_t &weatherStation) {
     return router;
 }
 
-// ----------------- main() -----------------
+// Entry point of the server application
 int main() {
     using namespace std::chrono;
 

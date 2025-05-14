@@ -70,7 +70,11 @@ public:
             // Push ny data til WebSocket-klienter (kompatibel version)
             auto json_msg = json_dto::to_json(m_weather.back());
             for (auto &[id, ws] : m_registry) {
-                ws->send_message(rws::message_t{ rws::opcode_t::text_frame, json_msg });
+                ws->send_message(rws::message_t{
+            rws::final_frame_flag_t::final_frame,
+            rws::opcode_t::text_frame,
+            json_msg
+            });
             }
 
             return resp.done();

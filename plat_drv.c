@@ -92,7 +92,7 @@ static int plat_drv_probe(struct platform_device *pdev)
     device_create(gpio_class, NULL, MKDEV(0, 0), NULL, "platgpio");
 
     timer_setup(&toggle_timer, toggle_gpio, 0);
-    pr_info("Driver probed\n");
+    pr_info("plat_drv: >>> probe() called\n");
 
     return 0;
 }

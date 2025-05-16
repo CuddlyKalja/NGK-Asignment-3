@@ -107,7 +107,7 @@ static int plat_drv_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id plat_drv_of_match[] = {
-    { .compatible = "ase,gpiotoggle", },
+    { .compatible = "au-ece,plat_drv", },
     {},
 };
 MODULE_DEVICE_TABLE(of, plat_drv_of_match);

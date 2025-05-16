@@ -117,6 +117,7 @@ static int plat_drv_probe(struct platform_device *pdev)
 
         devno = MKDEV(major, i);
         device_create(gpio_class, NULL, devno, NULL, "gpio_dev%d", i);
+        device_create(gpio_class, NULL, MKDEV(major, MAX_GPIOS), NULL, "platgpio");
     }
 
     timer_setup(&toggle_timer, toggle_gpio, 0);
